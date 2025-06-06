@@ -2,6 +2,8 @@ package com.pdfscanner;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Database {
     static final String DB_URL = "jdbc:mysql://localhost:3306/pdf_scanner";
@@ -44,15 +46,43 @@ public class Database {
         return -1;
     }
 
-    public static void insertScanResult(String filename, boolean malicious, int userId) {
+    public static void insertScanResult(String filename, boolean malicious, String classification, double score, int userId) {
         try (Connection conn = connect()) {
-            PreparedStatement stmt = conn.prepareStatement("INSERT INTO scans(user_id, filename, malicious) VALUES (?, ?, ?)");
+            PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT INTO scans(user_id, filename, malicious, classification, score) VALUES (?, ?, ?, ?, ?)"
+            );
             stmt.setInt(1, userId);
             stmt.setString(2, filename);
             stmt.setBoolean(3, malicious);
+            stmt.setString(4, classification);
+            stmt.setDouble(5, score);
             stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
+
+    public static List<ScanResult> getScanHistory(int userId) {
+        List<ScanResult> history = new ArrayList<>();
+        try (Connection conn = connect()) {
+            PreparedStatement stmt = conn.prepareStatement(
+                    "SELECT filename, malicious, classification, score FROM scans WHERE user_id = ?"
+            );
+            stmt.setInt(1, userId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String filename = rs.getString("filename");
+                boolean malicious = rs.getBoolean("malicious");
+                String classification = rs.getString("classification");
+                double score = rs.getDouble("score");
+                history.add(new ScanResult(filename, malicious, classification, score));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return history;
+    }
+
+
+
 }

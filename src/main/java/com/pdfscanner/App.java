@@ -16,7 +16,6 @@ public class App {
     public static void main(String[] args) {
         Javalin app = Javalin.create().start(7000);
 
-
         // Sign-up Endpoint
         app.post("/signup", ctx -> {
             String username = ctx.formParam("username");
@@ -31,7 +30,7 @@ public class App {
             String password = ctx.formParam("password");
             int userId = Database.authenticateUser(username, password);
             if (userId > 0) {
-                Algorithm algorithm = Algorithm.HMAC256("pdfscan"); // store securely
+                Algorithm algorithm = Algorithm.HMAC256("pdfmalwaredtection"); // store securely
                 String token = JWT.create()
                         .withClaim("userId", userId)
                         .sign(algorithm);
@@ -72,22 +71,24 @@ public class App {
                 Files.copy(input, temp.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             }
 
-            boolean malicious;
+            ScanResult result;
             try {
-                PDFScanner scanner = new PDFScanner();  // Create instance
-                malicious = scanner.scan(temp);          // Call instance method
+                PDFScanner scanner = new PDFScanner();
+                 result = scanner.scan(temp);
+                boolean malicious = result.malicious;
+                String classification = result.classification;
+                double score = result.score;
+                Database.insertScanResult(file.filename(), malicious, classification, score, userId);
+// Save result to DB with extended info
+
             } catch (IOException e) {
                 e.printStackTrace();
                 ctx.status(500).result("Error scanning file");
                 return;
             }
 
-            // Save result to DB
-            Database.insertScanResult(file.filename(), malicious, userId);
-
-            // Respond with JSON result
-            ctx.json(new ScanResult(file.filename(), malicious));
+            // Respond with full scan result including classification and score
+            ctx.json(result);
         });
-
     }
 }
