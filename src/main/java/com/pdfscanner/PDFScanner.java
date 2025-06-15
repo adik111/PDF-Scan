@@ -3,13 +3,8 @@ package com.pdfscanner;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.interactive.action.PDAction;
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionJavaScript;
 import org.apache.pdfbox.pdmodel.interactive.action.PDAdditionalActions;
-
-
-
 
 import java.io.File;
 import java.io.IOException;
@@ -57,7 +52,6 @@ public class PDFScanner {
         int score = 0;
         PDDocumentCatalog catalog = document.getDocumentCatalog();
 
-        // 1. Check for JavaScript in OpenAction (some PDFs have JS set here)
         try {
             if (catalog.getOpenAction() instanceof PDActionJavaScript) {
                 PDActionJavaScript jsAction = (PDActionJavaScript) catalog.getOpenAction();
@@ -68,7 +62,6 @@ public class PDFScanner {
             System.err.println("Error checking open action JS: " + e.getMessage());
         }
 
-        // 2. Check for JavaScript in document-level JavaScript name tree
         try {
             if (catalog.getNames() != null && catalog.getNames().getJavaScript() != null) {
                 for (PDActionJavaScript js : catalog.getNames().getJavaScript().getNames().values()) {
@@ -81,8 +74,6 @@ public class PDFScanner {
 
         return score;
     }
-
-
 
     private int analyzeJavaScript(String jsCode) {
         if (jsCode == null) return 0;
@@ -97,14 +88,51 @@ public class PDFScanner {
 
         for (String keyword : suspiciousJSKeywords) {
             if (lowerJS.contains(keyword)) {
-                score += 3; // suspicious javascript keyword found
+                score += 3;
             }
+        }
+        return score;
+    }
+
+    private int embeddedFileScore(PDDocument document) {
+        try {
+            if (document.getDocumentCatalog().getNames() != null &&
+                    document.getDocumentCatalog().getNames().getEmbeddedFiles() != null) {
+                return 5;
+            }
+        } catch (Exception e) {
+            System.err.println("Error checking embedded files: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    private int linkScore(String text) {
+        int score = 0;
+        if (text.contains("http://") || text.contains("https://")) {
+            if (text.contains("bit.ly") || text.contains("tinyurl") || text.contains("discord.gg")) {
+                score += 2;
+            }
+            if (text.matches(".*://[^\\s]*\\.exe")) {
+                score += 4;
+            }
+        }
+        return score;
+    }
+
+    private int obfuscationScore(String text) {
+        int score = 0;
+        if (text.matches(".*([A-Za-z0-9+/]{100,}).*")) {
+            score += 2;
+        }
+        if (text.matches(".*\\\\x[0-9A-Fa-f]{2}.*")) {
+            score += 2;
         }
         return score;
     }
 
     public ScanResult scan(File pdfFile) throws IOException {
         int totalScore = 0;
+
         try (PDDocument document = PDDocument.load(pdfFile)) {
             PDFTextStripper stripper = new PDFTextStripper();
             String text = stripper.getText(document).toLowerCase();
@@ -112,14 +140,18 @@ public class PDFScanner {
             totalScore += keywordScore(text);
             totalScore += regexScore(text);
             totalScore += javascriptScore(document);
+            totalScore += embeddedFileScore(document);
+            totalScore += linkScore(text);
+            totalScore += obfuscationScore(text);
         }
 
         String classification;
         boolean maliciousFlag;
-        if (totalScore > 5) {
+
+        if (totalScore > 7) {
             classification = "Malicious";
             maliciousFlag = true;
-        } else if (totalScore >= 3) {
+        } else if (totalScore >= 4) {
             classification = "Suspicious";
             maliciousFlag = false;
         } else {
