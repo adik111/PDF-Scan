@@ -3,7 +3,9 @@ import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Database {
     static final String DB_URL = "jdbc:mysql://localhost:3306/pdf_scanner";
@@ -82,6 +84,62 @@ public class Database {
         }
         return history;
     }
+
+    public static int authenticateAdmin(String username, String password) {
+        try (Connection conn = connect()) {
+            PreparedStatement stmt = conn.prepareStatement("SELECT id, password FROM admin WHERE username = ?");
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                String hashed = rs.getString("password");
+                if (BCrypt.checkpw(password, hashed)) {
+                    return rs.getInt("id");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+    public static boolean insertAdmin(String username, String password) {
+        try (Connection conn = connect()) {
+            String hashed = BCrypt.hashpw(password, BCrypt.gensalt());
+            PreparedStatement stmt = conn.prepareStatement("INSERT INTO admin(username, password) VALUES (?, ?)");
+            stmt.setString(1, username);
+            stmt.setString(2, hashed);
+            stmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static List<Map<String, Object>> getAllUserScans() {
+        List<Map<String, Object>> result = new ArrayList<>();
+        String query = "SELECT u.id AS userId, u.username, s.filename, s.malicious " +
+                "FROM users u LEFT JOIN scans s ON u.id = s.user_id ORDER BY u.id";
+
+        try (Connection conn = connect()) {
+            PreparedStatement stmt = conn.prepareStatement(query);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Map<String, Object> record = new HashMap<>();
+                record.put("userId", rs.getInt("userId"));
+                record.put("username", rs.getString("username"));
+                record.put("filename", rs.getString("filename"));
+                record.put("malicious", rs.getObject("malicious")); // nullable if no scans
+                result.add(record);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+
+
 
 
 
