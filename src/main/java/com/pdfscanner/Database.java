@@ -118,7 +118,7 @@ public class Database {
     public static List<Map<String, Object>> getAllUserScans() {
         List<Map<String, Object>> result = new ArrayList<>();
         String query = "SELECT u.id AS userId, u.username, s.filename, s.malicious " +
-                "FROM users u LEFT JOIN scans s ON u.id = s.user_id ORDER BY u.id";
+                "FROM users u INNER JOIN scans s ON u.id = s.user_id ORDER BY u.id";
 
         try (Connection conn = connect()) {
             PreparedStatement stmt = conn.prepareStatement(query);
@@ -137,10 +137,5 @@ public class Database {
         }
         return result;
     }
-
-
-
-
-
 
 }

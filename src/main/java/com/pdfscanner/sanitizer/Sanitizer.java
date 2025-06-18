@@ -14,6 +14,10 @@ public class Sanitizer {
         modules.add(new JavaScriptRemovalModule());
         modules.add(new LaunchActionRemovalModule());
         modules.add(new EmbeddedFileRemovalModule());
+        modules.add(new PowerShellStringRemovalModule());
+        modules.add(new RemoteLinkRemovalModule());
+        modules.add(new MetadataSanitizerModule());
+        modules.add(new AcroFormSanitizerModule());
     }
 
     public void sanitize(PDDocument document) {
