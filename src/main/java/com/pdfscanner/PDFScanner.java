@@ -1,16 +1,15 @@
 package com.pdfscanner;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
-import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
-import org.apache.pdfbox.pdmodel.interactive.action.PDActionJavaScript;
-import org.apache.pdfbox.pdmodel.interactive.action.PDAdditionalActions;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionJavaScript;
+import org.apache.pdfbox.text.PDFTextStripper;
 
 public class PDFScanner {
     private static final List<String> MALICIOUS_KEYWORDS = Arrays.asList(
@@ -148,7 +147,7 @@ public class PDFScanner {
         String classification;
         boolean maliciousFlag;
 
-        if (totalScore > 7) {
+        if (totalScore >= 6) {
             classification = "Malicious";
             maliciousFlag = true;
         } else if (totalScore >= 4) {
