@@ -1,20 +1,20 @@
 package com.pdfscanner;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.interfaces.DecodedJWT;
-
-import com.pdfscanner.sanitizer.PDFSanitizer;
-import io.javalin.Javalin;
-import io.javalin.http.UploadedFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.pdfscanner.sanitizer.PDFSanitizer;
+
+import io.javalin.Javalin;
+import io.javalin.http.UploadedFile;
 
 public class App {
     public static void main(String[] args) {
@@ -166,10 +166,10 @@ public class App {
             PDFScanner scanner = new PDFScanner();
             ScanResult result = scanner.scan(inputTemp);
 
-            if (!result.malicious) {
-                ctx.result("PDF is already clean or just suspicious. No need to sanitize.");
-                return;
-            }
+             if (!result.malicious) {
+                 ctx.result("PDF is already clean or just suspicious. No need to sanitize.");
+                 return;
+             }
 
             boolean cleaned = PDFSanitizer.cleanPDF(inputTemp, outputTemp);
             if (!cleaned) {

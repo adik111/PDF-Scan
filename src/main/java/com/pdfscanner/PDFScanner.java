@@ -66,10 +66,10 @@ public class PDFScanner {
         String classification;
         boolean maliciousFlag;
 
-        if (totalScore >= 7) {
+        if (totalScore >= 4) {
             classification = "Malicious";
             maliciousFlag = true;
-        } else if (totalScore >= 4) {
+        } else if (totalScore >= 2) {
             classification = "Suspicious";
             maliciousFlag = false;
         } else {
